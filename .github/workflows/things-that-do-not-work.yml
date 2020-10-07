@@ -230,7 +230,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-2016, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: cache geode
