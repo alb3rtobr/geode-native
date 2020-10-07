@@ -164,7 +164,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2016]
+        os: [windows-2016, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: cache geode
@@ -213,7 +213,7 @@ jobs:
       run: cmake --build C:\build --target cpp-acceptance-test -- /m
     - name: acceptance tests
       run: |
-        cd C:\build\cppcache\accpetance-test\
+        cd C:\build\cppcache\acceptance-test\
         ctest -j1
 
   old-cli-integration-test:
