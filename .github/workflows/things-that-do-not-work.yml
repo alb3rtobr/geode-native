@@ -31,6 +31,8 @@ jobs:
       run: export GEODE_HOME=~/apache-geode && cmake -Bbuild
     - name: cmake all-clangformat
       run: cmake --build build/ --target all-clangformat && git diff --exit-code
+    - name: clang compile all
+      run: cmake --build build/ -- -j2
 
   build-and-test-ipv6-macos-latest:
     runs-on: macos-latest
