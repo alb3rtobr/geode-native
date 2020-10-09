@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   clangformat:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: cache geode
@@ -27,6 +27,8 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -yq doxygen
     - name: mkdir build
       run: mkdir build
+    - name: use clang 10
+      run: sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10.0 999 && sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10.0 999 && sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-10.0 999 && sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-10.0 999 && sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-10.0 999
     - name: cmake configure
       run: export GEODE_HOME=~/apache-geode && cmake -Bbuild
     - name: cmake all-clangformat
