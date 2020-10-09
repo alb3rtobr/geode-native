@@ -67,7 +67,7 @@ jobs:
     - name: cmake all-clangformat
       run: cmake --build build/ --target all-clangformat && git diff --exit-code
 
-  clangcompile-version6:
+  clangcompile-version6-and-run-unit-test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -97,6 +97,8 @@ jobs:
       run: export GEODE_HOME=~/apache-geode && cmake -Bbuild
     - name: clang compile all
       run: cmake --build build/ -- -j2
+    - name: unit tests
+      run: build/cppcache/test/apache-geode_unittests
 
   build-and-unit-test:
     runs-on: ${{ matrix.os }}
