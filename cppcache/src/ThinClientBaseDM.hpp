@@ -164,6 +164,8 @@ class ThinClientBaseDM {
  private:
   static volatile bool s_isDeltaEnabledOnServer;
   static const char* NC_ProcessChunk;
+  static bool remoteCacheClosedInEndPoint(const std::string& epName,
+                                          const std::string& exceptStr);
 };
 
 }  // namespace client

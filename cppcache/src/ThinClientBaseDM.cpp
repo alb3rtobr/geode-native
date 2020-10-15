@@ -18,6 +18,8 @@
 #include "ThinClientBaseDM.hpp"
 
 #include <chrono>
+#include <fstream>
+#include <regex>
 
 #include <geode/AuthenticatedView.hpp>
 
@@ -122,6 +124,28 @@ GfErrType ThinClientBaseDM::sendSyncRequestRegisterInterest(
   return err;
 }
 
+bool ThinClientBaseDM::remoteCacheClosedInEndPoint(
+    const std::string& epName, const std::string& exceptStr) {
+  if (exceptStr.find("org.apache.geode.cache.CacheClosedException") !=
+      std::string::npos) {
+    return false;
+  }
+  std::string epPort = epName.substr(epName.find(":"));
+  //We are looking for something like:
+  //"org.apache.geode.cache.CacheClosedException: Remote cache is closed: 127.0.0.1(server_1:31663)<v1>:41002"
+  std::regex exceptionRegex("org.apache.geode.cache.CacheClosedException: Remote cache is closed:(.*):" + epPort + ")<");
+  std::stringstream ss(exceptStr);
+  std::string line;
+  while (std::getline(ss, line, '\n')) {
+    if (std::regex_search(line, exceptionRegex)) {
+      LOGDEBUG("ThinClientBaseDM::remoteCacheClosedInEndPoint - CacheClosedException happened in %s", epName.c_str());
+      return true;
+    }
+  }
+  LOGDEBUG("ThinClientBaseDM::remoteCacheClosedInEndPoint - CacheClosedException happened but not in %s", epName.c_str());
+  return false;
+}
+
 GfErrType ThinClientBaseDM::handleEPError(TcrEndpoint* ep,
                                           TcrMessageReply& reply,
                                           GfErrType error) {
@@ -130,14 +154,19 @@ GfErrType ThinClientBaseDM::handleEPError(TcrEndpoint* ep,
       const auto& exceptStr = reply.getException();
       if (!exceptStr.empty()) {
         bool markServerDead = unrecoverableServerError(exceptStr);
-        bool doFailover = (markServerDead || nonFatalServerError(exceptStr));
+        bool cacheClosedEx =
+            exceptStr.find("org.apache.geode.cache.CacheClosedException") !=
+            std::string::npos;
+        bool doFailover =
+            (markServerDead || cacheClosedEx || nonFatalServerError(exceptStr));
         if (doFailover) {
           LOGFINE(
-              "ThinClientDistributionManager::sendRequestToEP: retrying for "
+              "ThinClientDistributionManager::handleEPError: retrying for "
               "server [" +
               ep->name() + "] exception: " + exceptStr);
           error = GF_NOTCON;
-          if (markServerDead) {
+          if (markServerDead ||
+              remoteCacheClosedInEndPoint(ep->name(), exceptStr)) {
             ep->setConnectionStatus(false);
           }
         }
@@ -169,9 +198,7 @@ GfErrType ThinClientBaseDM::sendRequestToEndPoint(const TcrMessage& request,
  * This method is for exceptions when server should be marked as dead.
  */
 bool ThinClientBaseDM::unrecoverableServerError(const std::string& exceptStr) {
-  return ((exceptStr.find("org.apache.geode.cache.CacheClosedException") !=
-           std::string::npos) ||
-          (exceptStr.find("org.apache.geode.distributed.ShutdownException") !=
+  return ((exceptStr.find("org.apache.geode.distributed.ShutdownException") !=
            std::string::npos) ||
           (exceptStr.find("java.lang.OutOfMemoryError") != std::string::npos));
 }
